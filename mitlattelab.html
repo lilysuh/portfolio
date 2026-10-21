@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIT Latte Lab — Lily Suh</title>
+<style>
+  @font-face {
+    font-family: "Mabry Pro";
+    src: local("Mabry Pro"), local("MabryPro-Regular"), url("fonts/MabryPro-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange: #53b4fa;
+    --font: 'Mabry Pro','HelveticaNeue','Helvetica Neue',Helvetica,Arial,sans-serif;
+    --text: #111;
+    --muted: #999;
+    --border: rgba(0,0,0,0.09);
+  }
+
+  /* ── Global nav (shared with index.html) ── */
+  .nav-wrap {
+    position: fixed;
+    bottom: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+  }
+  .pill {
+    width: 120px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 2px 16px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: width 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease, border-radius 0.35s ease, transform 0.15s cubic-bezier(0.34,1.4,0.64,1);
+    will-change: width;
+  }
+  .pill.open {
+    width: 720px;
+    border-radius: 20px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.10), 0 16px 56px rgba(0,0,0,0.07);
+  }
+  .pill-bar {
+    display: flex;
+    align-items: center;
+    height: 64px;
+    padding: 0 22px 0 18px;
+    position: relative;
+  }
+  .pill:has(.pill-bar:active) { transform: scale(1.04); }
+  .gem {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  @keyframes spin360 {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .gem.spinning { animation: spin360 0.7s cubic-bezier(0.34,1.1,0.64,1) forwards; }
+  .gem-dash {
+    transform-origin: 50px 50px;
+    transition: transform 0.36s cubic-bezier(0.4,0,0.2,1);
+  }
+  .pill.open .gem-dash { transform: rotate(-45deg); }
+  .pill-name {
+    position: absolute;
+    left: 0; right: 0;
+    text-align: center;
+    z-index: 0;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    pointer-events: none;
+    user-select: none;
+    cursor: pointer;
+  }
+  .burger {
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 2px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    outline: none;
+    position: relative;
+    z-index: 2;
+  }
+  .burger span {
+    display: block;
+    width: 22px; height: 2px;
+    background: var(--text);
+    border-radius: 99px;
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease;
+  }
+  .pill.open .burger span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .pill.open .burger span:nth-child(2) { transform: translateY(-5px) rotate(-45deg); }
+  .pill-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .pill.open .pill-body { grid-template-rows: 1fr; }
+  .pill-body-inner { overflow: hidden; }
+  .pill-body-content {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 32px;
+    padding: 4px 22px 24px;
+    align-items: center;
+  }
+  .pill-nav-links { display: flex; flex-direction: column; justify-content: center; }
+  .pill-nav-links a {
+    display: block;
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1.22;
+    color: var(--text);
+    text-decoration: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34,1.2,0.64,1), color 0.16s ease;
+    transition-delay: 0s !important;
+  }
+  .pill.open .pill-nav-links a { opacity: 1; transform: translateY(0); }
+  .pill.open .pill-nav-links a:nth-child(1) { transition-delay: 0.08s !important; }
+  .pill.open .pill-nav-links a:nth-child(2) { transition-delay: 0.11s !important; }
+  .pill.open .pill-nav-links a:nth-child(3) { transition-delay: 0.14s !important; }
+  .pill.open .pill-nav-links a:nth-child(4) { transition-delay: 0.17s !important; }
+  .pill-nav-links a:hover { color: var(--muted); }
+  .pill-cards {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease 0.08s, transform 0.22s cubic-bezier(0.34,1.1,0.64,1) 0.08s;
+  }
+  .pill.open .pill-cards { opacity: 1; transform: translateY(0); }
+  .card {
+    flex: 1;
+    background: #EBEBEB;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+  }
+  .card:hover { transform: scale(1.015); }
+  .card-img-wrap {
+    width: 100%;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 7px;
+  }
+  .card-img-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+  .card-label {
+    padding: 0 2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.35;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .card-arrow { color: #888; font-size: 14px; flex-shrink: 0; }
+  .pill-foot {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.18s ease 0.18s, transform 0.18s ease 0.18s;
+  }
+  .pill.open .pill-foot { opacity: 1; transform: translateY(0); }
+
+  html, body {
+    background: #fff;
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    color: #111;
+  }
+
+  /* ── Header ── */
+  .hero-bg {
+    background: #8A1515;
+    border-radius: 0;
+    margin: 0 0 0 220px;
+  }
+  .cs-header {
+    padding: 200px 80px 120px 80px;
+    text-align: left;
+  }
+  .cs-title {
+    font-family: var(--font);
+    font-size: 42px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .cs-subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+  .cs-meta {
+    display: flex;
+    gap: 48px;
+    margin-top: 52px;
+    justify-content: flex-start;
+  }
+  .cs-meta-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 5px;
+  }
+  .cs-meta-value {
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* ── Case layout ── */
+  .case-layout {
+    margin: 0 0 80px 220px;
+    padding: 44px 80px 60px;
+  }
+  .case-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 220px;
+    height: 100vh;
+    background: #fff;
+    border-right: none;
+    padding: 120px 28px 40px;
+    z-index: 50;
+    overflow-y: auto;
+  }
+  .case-content { min-width: 0; }
+
+  .sidebar-back {
+    display: block;
+    font-size: 13px;
+    color: #999;
+    text-decoration: none;
+    margin-bottom: 32px;
+    transition: color 0.15s;
+  }
+  .sidebar-back:hover { color: #111; }
+
+  .accordion-item { border-bottom: none; }
+  .accordion-item:first-child { border-top: none; }
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font);
+  }
+  .accordion-icon { display: none; }
+  .accordion-label {
+    font-size: 15px;
+    font-weight: 400;
+    color: #bbb;
+    flex: 1;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-family: var(--font);
+    transition: color 0.15s;
+  }
+  .accordion-item:hover .accordion-label,
+  .accordion-item:hover .accordion-icon { color: #555; }
+  .accordion-item.active .accordion-label,
+  .accordion-item.active .accordion-icon { color: #111; }
+
+  /* ── Tab panels ── */
+  .tab-panel { display: block; }
+  .tab-panel + .tab-panel { margin-top: 80px; padding-top: 80px; border-top: none; }
+
+  /* ── Key Screens — always-visible section, left-aligned like header ── */
+  .key-screens-section {
+    margin-top: 60px;
+    padding: 0 180px;
+  }
+
+  /* ── Case hero ── */
+  .case-hero { margin-bottom: 56px; }
+  .case-hero-title {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #111;
+    max-width: 760px;
+    margin-bottom: 16px;
+  }
+  .case-hero-type {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .case-hero-type span { color: #111; }
+
+  /* ── Section utility ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    color: #111;
+    margin-bottom: 14px;
+  }
+
+  .section-body {
+    font-size: 17px;
+    font-weight: 400;
+    color: #444;
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  .section-list {
+    list-style: disc;
+    padding-left: 22px;
+    margin-bottom: 32px;
+  }
+  .section-list li {
+    font-size: 17px;
+    color: #444;
+    line-height: 1.7;
+  }
+
+  .hmw {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+    color: #111;
+    max-width: 760px;
+    padding-left: 20px;
+    border-left: 2px solid #111;
+  }
+
+  .section-sub {
+    font-size: 15px;
+    color: #aaa;
+    line-height: 1.6;
+  }
+
+  /* ── Context card ── */
+  .context-outer-card {
+    border: 1.5px solid #e5e5e5;
+    border-radius: 20px;
+    padding: 20px;
+    height: 540px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .context-intro {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.65;
+    margin-bottom: 20px;
+  }
+
+  .context-intro strong { color: #111; font-weight: 500; }
+
+  .edu-portal-box {
+    background: #fff;
+    border: 1.5px solid #ececec;
+    border-radius: 14px;
+    padding: 20px 16px;
+    box-sizing: border-box;
+  }
+
+  .edu-portal-box-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #bbb;
+    margin-bottom: 18px;
+  }
+
+  .edu-icons-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+  }
+
+  .edu-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .edu-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edu-icon-label {
+    font-size: 11px;
+    color: #999;
+    font-weight: 400;
+  }
+
+  /* ── Placeholder card ── */
+  .placeholder-card {
+    border: 1.5px solid #e5e5e5;
+    background: #fff;
+    border-radius: 20px;
+    height: 540px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 48px;
+  }
+
+  .placeholder-card-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #bbb;
+    letter-spacing: -0.01em;
+  }
+
+  .placeholder-card-sub {
+    font-size: 15px;
+    color: #ccc;
+  }
+
+  /* ── Feature rows ── */
+  .feature-section {
+    margin-bottom: 120px;
+  }
+
+  .feature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  .img-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #f2f2f2;
+    border-radius: 16px;
+  }
+
+  /* ── Bottom padding ── */
+  .page-end { padding-bottom: 120px; }
+
+  /* Text is narrower in the popup and widens when expanded to full page */
+  .case-content { max-width: 620px; transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+  body.cs-fullscreen .cs-subtitle { max-width: 760px; }
+  body.cs-fullscreen .case-content { max-width: 900px; }
+
+  /* ── Next project ── */
+  .next-project {
+    border-top: 1px solid #e8e8e8;
+    padding: 64px 120px 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .next-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #bbb;
+    font-family: var(--font);
+  }
+
+  .next-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: #111;
+    text-decoration: none;
+    font-family: var(--font);
+    transition: opacity 0.18s ease;
+  }
+
+  .next-link:hover { opacity: 0.5; }
+
+  .next-arrow {
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .card { flex: 0 0 144px !important; }
+  .pill-cards { justify-content: flex-end !important; }
+</style>
+</head>
+<body>
+
+<div class="case-layout">
+
+  <!-- Sidebar nav -->
+  <aside class="case-sidebar">
+    <a href="#" class="sidebar-back" onclick="if(window.parent && window.parent.closeCaseStudy){ window.parent.closeCaseStudy(); } else { window.location.href='index.html#projects'; } return false;">Back</a>
+    <div class="case-sidebar-sticky">
+      <div class="accordion-item active" data-tab="0">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 15,9 5,15" fill="none"/></svg></span>
+          <span class="accordion-label">Intro</span>
+        </button>
+      </div>
+      <div class="accordion-item" data-tab="1">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="9,2 11.5,7 17,7.5 13,11.5 14.5,17 9,14 3.5,17 5,11.5 1,7.5 6.5,7"/></svg></span>
+          <span class="accordion-label">Goal</span>
+        </button>
+      </div>
+      <div class="accordion-item" data-tab="2">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><line x1="9" y1="6" x2="9" y2="10"/><circle cx="9" cy="12.5" r="0.75" fill="currentColor" stroke="none"/></svg></span>
+          <span class="accordion-label">Key Insight</span>
+        </button>
+      </div>
+      <div class="accordion-item" data-tab="3">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 2C6 2 3.5 4.5 3.5 7.5c0 2 1 3.8 2.5 4.8V14h6v-1.7c1.5-1 2.5-2.8 2.5-4.8C14.5 4.5 12 2 9 2z"/><line x1="6.5" y1="15.5" x2="11.5" y2="15.5"/></svg></span>
+          <span class="accordion-label">Brand Concept</span>
+        </button>
+      </div>
+      <div class="accordion-item" data-tab="4">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9.5l4 4 8-8"/></svg></span>
+          <span class="accordion-label">Visual Identity</span>
+        </button>
+      </div>
+      <div class="accordion-item" data-tab="5">
+        <button class="accordion-header">
+          <span class="accordion-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h9l-2.5 4.5L12 12H3V3z"/><line x1="3" y1="3" x2="3" y2="15"/></svg></span>
+          <span class="accordion-label">Takeaways</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Content panels -->
+  <div class="case-content">
+    <div class="tab-panel" id="panel-0">
+      <div class="case-hero">
+        <h1 class="case-hero-title">Making Financial Literacy Feel Like an Invitation, Not a Lecture</h1>
+        <p class="case-hero-type"><span>Type:</span> Brand Identity, Event Design, Campaign Design</p>
+      </div>
+      <h2 class="section-title">House Fund</h2>
+      <p class="section-body">HouseFund is a financial literacy event designed for college students. Inspired by the familiarity and social energy of a house party, the brand reframes personal finance as something approachable, communal, and empowering. The identity bridges the gap between financial education and Gen Z culture, creating an experience that feels welcoming rather than intimidating.</p>
+    </div>
+    <div class="tab-panel" id="panel-1">
+      <h2 class="section-title">Goal</h2>
+      <p class="section-body">Many students:</p>
+      <ul class="section-list">
+        <li>Feel overwhelmed by financial topics</li>
+        <li>Associate finance with banks, debt, or complicated terminology</li>
+        <li>Lack engagement with traditional financial literacy programs</li>
+      </ul>
+      <p class="hmw">How might we make financial literacy feel as accessible and appealing as a social event while maintaining trust and educational value?</p>
+    </div>
+    <div class="tab-panel" id="panel-2">
+      <h2 class="section-title">Key Insight</h2>
+      <p class="section-body">College students willingly attend social events, networking events, and house parties, but rarely seek out financial education events on their own.</p>
+      <p class="hmw" style="margin-top: 32px;">By borrowing visual cues and language from social culture, financial literacy can become more inviting and relevant to Gen Z audiences.</p>
+    </div>
+    <div class="tab-panel" id="panel-3"></div>
+    <div class="tab-panel" id="panel-4"></div>
+    <div class="tab-panel" id="panel-5">
+      <h2 class="section-title">Takeaways</h2>
+      <p class="section-body">The most important design challenge was balancing credibility with approachability. The identity needed enough energy to attract students while still establishing trust around financial education. Through the HouseFund concept, I explored how branding can reshape perceptions of traditionally intimidating subjects and create stronger audience engagement.</p>
+    </div>
+  </div>
+
+</div><!-- /case-layout -->
+
+<script>
+(function() {
+  /* ── Scrollspy sidebar ── */
+  var accordionItems = document.querySelectorAll('.accordion-item');
+  var panels = document.querySelectorAll('.tab-panel');
+
+  accordionItems.forEach(function(item) {
+    item.querySelector('.accordion-header').addEventListener('click', function() {
+      var idx = parseInt(item.dataset.tab);
+      panels[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  function onScroll() {
+    var scrollY = window.scrollY + window.innerHeight * 0.25;
+    var active = 0;
+    panels.forEach(function(panel, i) {
+      if (panel.getBoundingClientRect().top + window.scrollY <= scrollY) active = i;
+    });
+    accordionItems.forEach(function(item, i) {
+      item.classList.toggle('active', i === active);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ── Global nav pill ── */
+  var pill = document.querySelector('.pill');
+  var gem  = document.querySelector('.gem');
+  if (pill && gem) {
+    gem.addEventListener('click', function(e) {
+      e.stopPropagation();
+      gem.classList.add('spinning');
+      gem.addEventListener('animationend', function() {
+        window.location.href = 'index.html';
+      }, { once: true });
+    });
+    document.addEventListener('click', function(e) {
+      if (!pill.contains(e.target)) pill.classList.remove('open');
+    });
+    var burger = pill.querySelector('.burger');
+    if (burger) {
+      burger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        pill.classList.toggle('open');
+      });
+    }
+  }
+})();
+
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'cs-fullscreen') {
+      document.body.classList.toggle('cs-fullscreen', e.data.value);
+    }
+  });
+</script>
+
+
+</body>
+</html>
